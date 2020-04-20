@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" href="index.css"/>
+
+    <title>CardSim</title>
+</head>
+
+<body class="d-flex flex-column">
+<div id="page-content">
+    <div class="alert alert-danger collapse" id="redirectAlert" role="alert">Error: Unknown Error</div>
+    <div class="container text-center">
+        <div class="row justify-content-center">
+            <div class="col-md-0">
+                <h1 class="font-weight-light mt-4 text-white">Eric's Card Game Simulators</h1>
+                <div class="container m-0 p-6">
+                    <p class="lead text-white-50">Did you leave all your fun board games at your apartment in
+                        Pittsburgh? Play them here!</p>
+
+                </div>
+
+                <div class="container d-flex justify-content-center">
+                    <div class="card-deck">
+                        <div class="card mx-2 mb-6 box-shadow-lg">
+                            <div class="card-header">
+                                <h4 class="my-0 font-weight-normal">Secret Hitler</h4>
+                            </div>
+
+                            <div class="card-body">
+                                <p>Secret Hitler is a social deduction game for 5-10 people about finding and stopping
+                                    the Secret Hitler.</p>
+                                <button type="button" class="btn btn-lg btn-block btn-outline-secondary"
+                                        data-toggle="modal" data-target="#joinGame" data-game="secret"
+                                        data-title="Secret Hitler">Play
+                                    now
+                                </button>
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="joinGame" tabindex="-1" role="dialog" aria-labelledby="joinGameLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header shadow-lg">
+                <h5 class="modal-title" id="joinGameLabel">Play Now</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body bg-light">
+                <form class="form form-horizontal" id="joinRoomForm" novalidate>
+                    <div class="form-group mt-2">
+                        <label for="username" class="sr-only">Username</label>
+                        <input type="text" class="form-control" id="username" placeholder="Username"
+                               minlength="3" maxlength="16" pattern="[A-Za-z0-9][A-Za-z0-9 ]*" autocomplete="off"
+                               required/>
+                        <div class="invalid-feedback" id="usernameFeedback">Username must be 3-16 characters, and only
+                            letters, numbers, and spaces.
+                        </div>
+                    </div>
+
+                    <label for="roomCode" class="mb-1 text-muted">If you have a room code, you may enter it
+                        here:</label>
+                    <div class="input-group">
+
+                        <input class="form-control" id="roomCode" maxlength="7" placeholder="xxx xxx" minlength="7"
+                               pattern="[A-Za-z]{3} [A-Za-z]{3}" autocomplete="off" required/>
+                        <div class="input-group-append">
+                            <button type="button" id="joinRoom" class="btn btn-secondary px-3">Join Room</button>
+                        </div>
+                        <div class="invalid-feedback" id="roomCodeFeedback">Room code should be two three-letter words,
+                            e.g. "bed bug."
+                        </div>
+                    </div>
+
+                </form>
+                <div class="form-group mt-4">
+                    <span class="text-muted">Alternatively, create a room here:</span>
+                    <button type="button" id="createRoom" class="btn btn-block btn-secondary px-3">Create a Room
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer id="sticky-footer" class="py-4 bg-dark text-white-50">
+    <div class="container text-center">
+        <small>Made by <a target="_blank" href="http://github.com/ericeschnei">@ericeschnei</a>.</small>
+    </div>
+</footer>
+
+
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+        integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+        crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+        integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.1/dist/jquery.validate.min.js"></script>
+
+<script src="index.js"></script>
+<script src="background.js"></script>
+
+</body>
+
+
+</html>
