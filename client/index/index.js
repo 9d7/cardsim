@@ -4,12 +4,12 @@ $(document).ready(function () {
     var errorCode = sessionStorage.getItem('error');
     if (errorCode !== null && errorCode !== "") {
         redirectAlert.text(errorCode);
-        redirectAlert[0].classList.remove('collapse');
+        redirectAlert.collapse("show");
         sessionStorage.removeItem('error');
     }
 
     redirectAlert.click(function() {
-        this.classList.add('collapse');
+        redirectAlert.collapse("hide");
     });
 
     // modal customization

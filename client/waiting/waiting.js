@@ -5,6 +5,7 @@ $(document).ready(function () {
         window.location.replace('/');
     }
 
+
     var action = sessionStorage.getItem('action');
     if (action === null) {
         errorOut("");
@@ -35,15 +36,53 @@ $(document).ready(function () {
         errorOut("");
     }
 
+    var numPlayers = -1;
+    var maxPlayers = -1;
+    var minPlayers = -1;
+    var gameName = "";
+
+
+    function joinRoom(response, valid) {
+        if (!valid) {
+            errorOut(response)
+        }
+
+        $("#roomCode").text(roomCode);
+        $("#gameName").text(response.name);
+
+    }
 
     const socket = io('/waiting', {transports: ['websocket'], upgrade: false});
 
     socket.on('connect', function () {
-        $('#disconnectAlert')[0].classList.add('collapse');
+        $('#disconnectAlert').collapse("hide");
 
-        socket.emit('userdata', {
-            name: localStorage.getItem('name')
+        // register username
+        socket.emit('register_username', username, function (response, valid) {
+            if (!valid) {
+                errorOut(response);
+            }
+
+            // username registered, send create request if needed
+            if (action === 'create') {
+                socket.emit('create', game, function (response, valid) {
+                    if (valid) {
+                        // room created, send join request
+                        roomCode = response;
+                        socket.emit('join', [response, game], joinRoom);
+
+                    } else {
+                        errorOut(response);
+                    }
+                });
+            }
+
+            else {
+                socket.emit('join', [roomCode, game], joinRoom);
+            }
+
         });
+
 
 
     })

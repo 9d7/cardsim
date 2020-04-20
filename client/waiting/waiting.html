@@ -16,24 +16,24 @@
 <body class="d-flex flex-column">
 <div id="page-content">
 
-    <div class="alert alert-danger" id='disconnectAlert' role="alert">
+    <div class="alert alert-danger collapse" id='disconnectAlert' role="alert">
         You are currently disconnected from the server. Attempting to reconnect...
     </div>
 
     <div class="container mt-5 justify-content-center">
         <div class="jumbotron p-3 shadow-lg border">
             <h1 class="display-4 text-center" id="status">Loading...</h1>
-            <div class="container text-center justify-content-center collapse">
+            <div class="container text-center justify-content-center collapse show">
                 <p class="m-0">Room Code:</p>
                 <h2><code class="text-primary" id="roomCode">big ben</code></h2>
                 <hr class="mt-2 mb-3"/>
                 <div class="container center-text  mt-2">
-                    <h4>Game: <span id="gameName">Secret Hitler</span></h4>
+                    <h4>Game: <span id="gameName">...</span></h4>
                 </div>
             </div>
         </div>
 
-        <div class="container text-center collapse" id="player-list">
+        <div class="container text-center collapse show" id="player-list">
             <div class="row my-3">
                 <div class="col">
                     <h3 class="text-white player">eric</h3>

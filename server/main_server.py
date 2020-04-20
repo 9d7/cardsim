@@ -2,6 +2,8 @@ import asyncio
 import uvicorn
 import socketio
 
+from server.waiting import WaitingHandler
+
 sio = socketio.AsyncServer(async_mode='asgi')
 app = socketio.ASGIApp(sio, static_files={
     '/': 'client/index/index.html',
@@ -17,9 +19,12 @@ app = socketio.ASGIApp(sio, static_files={
 
 })
 
+handlers = [
+    WaitingHandler('/waiting')
+]
 
-
-
+for handler in handlers:
+    sio.register_namespace(handler)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='127.0.0.1', port=5000)
