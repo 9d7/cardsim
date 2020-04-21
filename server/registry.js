@@ -29,21 +29,22 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
     this.defaultCallback = defaultCallback;
     this.io = io;
 
+    let self = this;
     setInterval(function () {
-        for (const bucket in this.ipBuckets) {
-            if (this.ipBuckets.hasOwnProperty(bucket)) {
-                this.ipBuckets[bucket] -= 1
-                this.ipBuckets[bucket] = Math.max(this.ipBuckets.bucket, 0);
+        for (const bucket in self.ipBuckets) {
+            if (self.ipBuckets.hasOwnProperty(bucket)) {
+                self.ipBuckets[bucket] -= 1
+                self.ipBuckets[bucket] = Math.max(self.ipBuckets[bucket], 0);
             }
 
         }
     }, leakRate);
 
     setInterval(function () {
-        for (const bucket in this.ipBuckets) {
-            if (this.ipBuckets.hasOwnProperty(bucket)) {
-                if (this.ipBuckets[bucket] === 0) {
-                    delete this.ipBuckets[bucket];
+        for (const bucket in self.ipBuckets) {
+            if (self.ipBuckets.hasOwnProperty(bucket)) {
+                if (self.ipBuckets[bucket] === 0) {
+                    delete self.ipBuckets[bucket];
                 }
             }
         }
@@ -87,10 +88,12 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
     this._on_connect = (socket) => {
 
         if (!this._ip_check(socket)) return;
-        socket.once('register', (data) => this._on_register(socket, data));
+        socket.on('disconnect', (reason) => {this._on_disconnect(socket, reason)});
+        socket.once('register', (data, fn) => {fn(this._on_register(socket, data))});
     };
 
-    this._on_disconnect = (socket) => {
+    this._on_disconnect = (socket, reason) => {
+
         if (!this.sessionToToken.hasOwnProperty(socket.id)) {
             return;
         }
@@ -99,18 +102,17 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
         let registry = this;
         this.killTimers[token] = setTimeout(function () {
             registry._get_callback(token, 'disconnect', null);
-            delete registry.sessionToToken[socket.id];
             delete registry.tokenToSession[token];
-            delete registry.tokenToIp[token];
+            delete registry.tokenToIP[token];
             delete registry.killTimers[token];
             delete registry.tokenRooms[token];
             delete registry.tokenCallbacks[token];
+            delete registry.sessionToToken[socket.id];
 
         }, this.disconnectTime);
     };
 
     io.on('connect', this._on_connect);
-    io.on('disconnect', this._on_disconnect);
 
     this._register_new_token = (socket) => {
         let newToken = srs();
@@ -124,6 +126,7 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
     // what should occur when socket emits
     // some sort of 'register' event
     this._on_register = (socket, data) => {
+
         // leaky bucket
         if (!this._ip_check(socket)) return;
 
@@ -167,7 +170,7 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
                         }
 
 
-                        this._get_callback(token, 'reconnect', null);
+                        this._get_callback(data, 'reconnect', null);
 
                         return data;
 
