@@ -1,5 +1,8 @@
 $(document).ready(function () {
 
+    var socket = io();
+    base_io(socket);
+
     var redirectAlert = $("#redirectAlert");
     var errorCode = sessionStorage.getItem('error');
     if (errorCode !== null && errorCode !== "") {
