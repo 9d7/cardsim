@@ -29,6 +29,7 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
     this.defaultCallback = defaultCallback;
     this.io = io;
 
+    // the "leak" for the leaky buckets
     let self = this;
     setInterval(function () {
         for (const bucket in self.ipBuckets) {
@@ -40,6 +41,7 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
         }
     }, leakRate);
 
+    // periodic clear of empty buckets
     setInterval(function () {
         for (const bucket in self.ipBuckets) {
             if (self.ipBuckets.hasOwnProperty(bucket)) {
@@ -51,11 +53,26 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
     }, ipClearRate);
 
 
+    /**
+     * Gets the IP Adress of a socket. It seems like the API
+     * constantly changes, so it's wrapped here just to be safe.
+     * @param socket        The socket to get the IP from.
+     * @returns {string}    The IP.
+     * @private
+     */
     let _get_ip = (socket) => {
         return socket.handshake.address;
     };
 
-    this._ip_check = (socket) => {
+    /**
+     * Adds a drip to the socket IP's bucket, and determines if the
+     * socket should be ignored. This is implemented on a per-IP level,
+     * as to prevent anybody from just opening a bunch of tabs.
+     * @param socket        The socket
+     * @returns {boolean}   Whether to respond to the socket.
+     * @private
+     */
+    let _ip_check = (socket) => {
         let ip = _get_ip(socket);
 
         if (!this.ipBuckets.hasOwnProperty(ip)) {
@@ -67,6 +84,16 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
         return (this.ipBuckets[ip] <= this.maxFill);
     };
 
+    /**
+     * Internal-use function for triggering a callback function.
+     * If a tokenCallback exists, this function will use that for
+     * the callback. Otherwise, it will attempt to use the default.
+     * @param token     The token to get the callback from
+     * @param event     The event to call
+     * @param data      The data to call the event with
+     * @returns {*}     The return value of the callback
+     * @private
+     */
     this._get_callback = (token, event, data) => {
         if (this.tokenCallbacks.hasOwnProperty(token)) {
             if (this.tokenCallbacks[token].hasOwnProperty(event)) {
@@ -77,6 +104,12 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
         }
     };
 
+    /**
+     * Gets the session corresponding with a given token.
+     * @param token         The token to lookup
+     * @returns {string}    The session token, if it exists.
+     * @private
+     */
     this._get_session = (token) => {
         if (!this.tokenToSession.hasOwnProperty(token)) {
             console.log("INTERNAL WARNING: _get_session called on a non-existent token.");
@@ -85,13 +118,36 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
         return this.tokenToSession[token];
     };
 
+    /**
+     * The callback registered with the socket manager.
+     * This is run any time there is a new socket connection.
+     * Currently, this only does two things:
+     * - Register a disconnect handler for this socket
+     * - Wait for the socket to send a registration frame, then call _on_register.
+     * @param socket    The new socket connection.
+     * @private
+     */
     this._on_connect = (socket) => {
 
-        if (!this._ip_check(socket)) return;
+        if (!_ip_check(socket)) return;
         socket.on('disconnect', (reason) => {this._on_disconnect(socket, reason)});
         socket.once('register', (data, fn) => {fn(this._on_register(socket, data))});
     };
 
+    /**
+     * The callback registered with each socket upon its end-of-session
+     * with the server. Note that this is NOT what is called at the token's
+     * end-of-life, since the user can potentially reconnect.
+     *
+     * This function will schedule the removal of the token after
+     * disconnectTime ms, at which point it will be deleted from
+     * all memory in the server (except ipBuckets, which are cleared
+     * periodically).
+     *
+     * @param socket    The socket that disconnected
+     * @param reason    The reason for the disconnect. Currently unused.
+     * @private
+     */
     this._on_disconnect = (socket, reason) => {
 
         if (!this.sessionToToken.hasOwnProperty(socket.id)) {
@@ -114,6 +170,12 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
 
     io.on('connect', this._on_connect);
 
+    /**
+     * Registers a new token-socket pair and inserts it into the Registry memory.
+     * @param socket        The socket to register
+     * @returns {string}    The token
+     * @private
+     */
     this._register_new_token = (socket) => {
         let newToken = srs();
         this.tokenToSession[newToken] = socket.id;
@@ -123,12 +185,21 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
         return newToken;
     };
 
-    // what should occur when socket emits
-    // some sort of 'register' event
+    /**
+     * After connecting, the client sends a "register" event.
+     * This event could contain either a token, or nothing.
+     * If it contains a token, the server checks against all the stored tokens
+     * to evaluate if it should re-activate an interrupted session. If it
+     * does not, the server creates and distributes a new token.
+     * @param socket            The socket that sent the event
+     * @param data              The data the socket sent
+     * @returns {string|null}   On success, the token. On failure, null.
+     * @private
+     */
     this._on_register = (socket, data) => {
 
         // leaky bucket
-        if (!this._ip_check(socket)) return;
+        if (!_ip_check(socket)) return;
 
         // check that socket doesn't already exist
         if (this.sessionToToken.hasOwnProperty(socket.id)) {
@@ -200,7 +271,11 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
 
     };
 
-
+    /**
+     * Register a class to function as the "sessionToToken" of
+     * @param io
+     * @param callbacks
+     */
     this.register_callback_class = (io, callbacks) => {
 
         let registry = this;
