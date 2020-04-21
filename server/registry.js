@@ -113,7 +113,7 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
     this._get_session = (token) => {
         if (!this.tokenToSession.hasOwnProperty(token)) {
             console.log("INTERNAL WARNING: _get_session called on a non-existent token.");
-            return;
+            return null;
         }
         return this.tokenToSession[token];
     };
@@ -130,8 +130,12 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
     this._on_connect = (socket) => {
 
         if (!_ip_check(socket)) return;
-        socket.on('disconnect', (reason) => {this._on_disconnect(socket, reason)});
-        socket.once('register', (data, fn) => {fn(this._on_register(socket, data))});
+        socket.on('disconnect', (reason) => {
+            this._on_disconnect(socket, reason)
+        });
+        socket.once('register', (data, fn) => {
+            fn(this._on_register(socket, data))
+        });
     };
 
     /**
@@ -236,6 +240,13 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
                         this.sessionToToken[socket.id] = data;
                         this.tokenToSession[data] = socket.id;
 
+                        if (this.tokenCallbacks.hasOwnProperty(data)) {
+                            this._hookup_callbacks(socket, data, this.tokenCallbacks[data]);
+                        } else {
+                            this._hookup_callbacks(socket, data, this.defaultCallback);
+                        }
+
+
                         if (this.tokenRooms.hasOwnProperty(data)) {
                             socket.join(this.tokenRooms[data]);
                         }
@@ -271,54 +282,62 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
 
     };
 
-    /**
-     * Register a class to function as the "sessionToToken" of
-     * @param io
-     * @param callbacks
-     */
-    this.register_callback_class = (io, callbacks) => {
+    this._get_callbacks_from_object = (callbacks) => {
+        return Object.keys(callbacks).filter(
+            x => !['connect', 'reconnect', 'disconnect'].includes(x) &&
+                callbacks.hasOwnProperty(x)
+        );
+    }
 
-        let registry = this;
+    this._get_callbacks_from_token = (token) => {
+        if (this.tokenCallbacks.hasOwnProperty(token)) {
+            return this._get_callbacks_from_object(this.tokenCallbacks[token]);
+        } else {
+            return this._get_callbacks_from_object(this.defaultCallback);
+        }
+    }
 
-        for (const trigger in callbacks) {
-            if (callbacks.hasOwnProperty(trigger)) {
+    this._hookup_callbacks = (socket, token, callbacks) => {
 
-                if (!['connect', 'disconnect', 'reconnect'].includes(trigger)) {
+        this._get_callbacks_from_object(callbacks).map(
+            x => socket.on(x, (data, fn) => {
+                if (!_ip_check(socket)) return null;
 
-                    io.on(trigger, function (socket, data) {
-
-                        // leaky bucket
-                        if (!registry._ip_check(socket)) return;
-
-                        // if socket is unregistered, let it know
-                        if (!this.sessionToToken.hasOwnProperty(socket.id)) {
-                            socket.emit('unregistered');
-                            console.log("WARNING: Unregistered client sent " +
-                                "event \"" + trigger + "\" with data \"" + data + "\"");
-                            return;
-                        }
-
-                        // run callback
-                        let token = sessionToToken[socket.id];
-                        return registry._get_callback(token, trigger, data);
-
-                    });
+                if (!this.sessionToToken.hasOwnProperty(socket.id)) {
+                    console.log("WARNING: User attempted to send frame while unregistered. Not responding...");
+                    return null;
                 }
 
+                let token = this.sessionToToken[socket.id];
+                fn(callbacks[x](token, data, this));
 
-            }
+            })
+        )
 
-        }
-    };
+    }
 
     this.set_callbacks = (token, callbacks) => {
 
-        if (!this.tokenToSession.hasOwnProperty(token)) {
-            console.log("INTERNAL WARNING: Callbacks set on non-existent token.");
+        let session = self._get_session(token);
+        if (session === null) return;
+
+
+        if (!self.io.sockets.connected.hasOwnProperty(session)) {
+            // user temporarily disconnected
+            // this is fine, callbacks are updated in registry for when they return,
+            this.tokenCallbacks[token] = callbacks;
             return;
         }
 
+        let socket = self.io.sockets.connected[session];
+
+        this._get_callbacks_from_token(token).map(
+            x => socket.removeAllListeners(x)
+        )
+
         this.tokenCallbacks[token] = callbacks;
+        this._hookup_callbacks(socket, token, callbacks);
+
     };
 
     this.send = (token, event, data, callback) => {
