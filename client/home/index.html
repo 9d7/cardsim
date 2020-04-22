@@ -15,7 +15,6 @@
 
 <body class="d-flex flex-column">
 <div id="page-content">
-    <div class="alert alert-danger collapse" id="redirectAlert" role="alert">Error: Unknown Error</div>
     <div class="container text-center">
         <div class="row justify-content-center">
             <div class="col-md-0">
@@ -62,6 +61,7 @@
                 </button>
             </div>
             <div class="modal-body bg-light">
+                <div class="alert alert-danger collapse show" id="modalAlert" role="alert">Error: Unknown Error</div>
                 <form class="form form-horizontal" id="joinRoomForm" novalidate>
                     <div class="form-group mt-2">
                         <label for="username" class="sr-only">Username</label>
@@ -73,7 +73,14 @@
                         </div>
                     </div>
 
-                    <label for="roomCode" class="mb-1 text-muted">If you have a room code, you may enter it
+                    <div class="form-group mx-4 mt-2">
+                        <button type="button" id="createRoom" class="btn btn-block btn-secondary px-3">Create a Room
+                        </button>
+                    </div>
+
+                    <hr class="my-3"/>
+
+                    <label for="roomCode" class="mb-1 text-muted">Alternatively, if you have a room code, you may enter it
                         here:</label>
                     <div class="input-group">
 
@@ -88,11 +95,7 @@
                     </div>
 
                 </form>
-                <div class="form-group mt-4">
-                    <span class="text-muted">Alternatively, create a room here:</span>
-                    <button type="button" id="createRoom" class="btn btn-block btn-secondary px-3">Create a Room
-                    </button>
-                </div>
+
             </div>
         </div>
     </div>

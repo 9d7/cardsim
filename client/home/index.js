@@ -3,17 +3,19 @@ $(document).ready(function () {
     var socket = io();
     base_io(socket);
 
-    var redirectAlert = $("#redirectAlert");
-    var errorCode = sessionStorage.getItem('error');
-    if (errorCode !== null && errorCode !== "") {
-        redirectAlert.text(errorCode);
-        redirectAlert.collapse("show");
-        sessionStorage.removeItem('error');
+    var responses = {
+        usernameEmpty: "A username is required.",
+        roomCodeEmpty: "A room code is required.",
+        wrongLength: "Username must be between 3 and 16 characters.",
+        invalidCharacters: "Username must only use letters, numbers, and spaces.",
+        duplicateSpaces: "Username cannot contain duplicate spaces.",
+        affixSpaces: "Username cannot start or end with spaces.",
+        genericError: "There was a problem with the server. Please try again later.",
+        serverError: "Please double-check this.",
+        noRoomFound: "No room was found with that name.",
+        usernameUsed: "That username already exists in that room. Please choose a unique one.",
+        noRoomCreated: "The server is a bit too busy right now. Please try again later."
     }
-
-    redirectAlert.click(function () {
-        redirectAlert.collapse("hide");
-    });
 
     // modal customization
     $('#joinGame').on('show.bs.modal', function (event) {
@@ -21,26 +23,12 @@ $(document).ready(function () {
         var title = button.data('title');
 
         var game = button.data('game');
-
-        var localGame = sessionStorage.getItem('game');
-        console.log(localGame);
-
-        if (game !== localGame) {
-            sessionStorage.setItem('game', game);
-            sessionStorage.removeItem('room');
-        }
-
-        var room = sessionStorage.getItem('room');
-        var roomCodeEntry = $('#roomCode');
-
-        // set room code to old value if playing the same game
-        if (roomCodeEntry.val().length === 0 && room !== null)
-            roomCodeEntry.val(room);
+        $('#joinRoom').data('game', game);
+        $('#createRoom').data('game', game);
 
         // set name to old value
         var user = localStorage.getItem('name');
         var userEntry = $('#username');
-
         if (userEntry.val().length === 0 && user !== null)
             userEntry.val(user);
 
@@ -49,79 +37,121 @@ $(document).ready(function () {
     });
 
 
-    function checkUsername() {
-        var username = $('#username');
-        var userVal = username.val();
-        var feedback = $('#usernameFeedback');
+    let checkUsername = (username) => {
 
-
-        var retval = username[0].checkValidity();
-
-
-        if (userVal.length === 0) {
-            feedback.text('A username is required.');
-        } else if (userVal.length < 3) {
-            feedback.text('Username must be at least three characters.');
-        } else if (userVal.length > 16) {
-            feedback.text('Username must be at most sixteen characters.');
-        } else {
-            feedback.text('Username must consist of only letters, numbers, and spaces.')
+        var usernameError = "";
+        // check username validity
+        if (username.length === 0) {
+            usernameError = "usernameEmpty";
+        } else if (username.length < 3 || username.length > 16) {
+            usernameError = "wrongLength";
+        } else if (username.search(/^[A-Za-z0-9 ]+$/) === -1) {
+            usernameError = "invalidCharacters";
+        } else if (username.search(/ {2}/) !== -1) {
+            usernameError = "duplicateSpaces";
+        } else if (username[0] === ' ' || username[username.length - 1] === ' ') {
+            usernameError = "affixSpaces";
         }
 
-
-        username.parent()[0].classList.add('was-validated');
-
-        if (retval) localStorage.setItem('name', userVal);
-
-        return retval;
+        return usernameError;
     }
 
-    function checkRoomCode() {
-        var roomCode = $('#roomCode');
-        var roomVal = roomCode.val();
-        var feedback = $('#roomCodeFeedback');
+    let checkRoomCode = (roomCode) => {
 
-        if (roomVal.length === 0) {
-            feedback.text('A room code is required.');
-        } else {
-            feedback.text('The room code should be two three-letter words, separated by a space, e.g. "bed bug."');
+        var roomCodeError = "";
+
+        if (roomCode.length === 0) {
+            roomCodeError = "roomCodeEmpty";
+        } else if (roomCode.search(/^[A-Za-z]{3} [A-Za-z]{3}$/) !== 0) {
+            roomCodeError = "wrongFormat";
         }
 
-        var retval = roomCode[0].checkValidity();
-        roomCode.parent()[0].classList.add('was-validated');
-
-        if (retval) sessionStorage.setItem('room', roomVal.toLowerCase());
-
-        return retval;
-
+        return roomCodeError;
     }
 
-    // modal validation
+    // on join room
     $('#joinRoom').on('click', function (event) {
 
-        var userValid = checkUsername();
-        var roomValid = checkRoomCode();
+        let roomCode = $('#roomCode')
+        let username = $('#username')
 
-        if (userValid && roomValid) {
-            sessionStorage.setItem('action', 'join');
-            window.location.href = '/waiting';
+        let roomVal = roomCode.val();
+        let userVal = username.val();
+
+        let usernameError = checkUsername(userVal);
+        let roomCodeError = checkRoomCode(roomVal);
+
+        if (usernameError !== "") {
+            $('#usernameFeedback').text(responses[usernameError]);
+            username.removeClass('is-valid').addClass('is-invalid');
+        } else {
+            username.removeClass('is-invalid').addClass('is-valid');
         }
 
+        if (roomCodeError !== "") {
+            $('#roomCodeFeedback').text(responses[roomCodeError]);
+            roomCode.removeClass('is-valid').addClass('is-invalid');
+        } else {
+            roomCode.removeClass('is-invalid').addClass('is-valid');
+        }
+
+        if (usernameError === "" && roomCodeError === "") {
+
+            socket.emit('submitJoin', {
+                username: userVal,
+                roomCode: roomVal
+            }, (data) => {
+
+                if (data.accepted) {
+
+                } else {
+                    if (data.response.username !== undefined) {
+                        $('#usernameFeedback').text(responses[data.response.username]);
+                        username.removeClass('is-valid').addClass('is-invalid');
+                    }
+
+                    if (data.response.roomCode !== undefined) {
+                        $('#roomCodeFeedback').text(responses[data.response.roomCode]);
+                        roomCode.removeClass('is-valid').addClass('is-invalid');
+                    }
+
+                    if (data.response.modal !== undefined) {
+                        let modalAlert = $('#modalAlert');
+                        modalAlert.text(responses[data.response.modal]);
+                        modalAlert.collapse('show');
+                    }
+
+                }
+
+            })
+
+
+        }
 
     });
 
+    // on create room
     $('#createRoom').on('click', function (event) {
 
-        if (checkUsername()) {
-            sessionStorage.setItem('action', 'create');
-            window.location.href = '/waiting';
-        }
+
 
     });
 
 
+    // clear validation on input
     $('input').on('input', function (event) {
-        $(this).parent()[0].classList.remove('was-validated');
+        $(this).removeClass('is-valid is-invalid');
     });
+
+    let modalAlert = $('#modalAlert');
+    modalAlert.on('shown.bs.collapse', function (event) {
+        $('#joinGame').modal('handleUpdate');
+    });
+    modalAlert.on('hidden.bs.collapse', function (event) {
+        $('#joinGame').modal('handleUpdate');
+    })
+    modalAlert.on('click', function (event) {
+        $(this).collapse('hide');
+    })
 
 });

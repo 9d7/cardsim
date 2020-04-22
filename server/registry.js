@@ -1,3 +1,5 @@
+'use strict';
+
 const srs = require("secure-random-string");
 
 /**
@@ -19,10 +21,10 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
     this.tokenToSession = {};
     this.tokenCallbacks = {};
     this.tokenRooms = {};
-    this.rooms = {};
     this.tokenToIP = {};
     this.ipBuckets = {};
     this.killTimers = {};
+    this.tokenData = {};
 
     this.maxFill = maxFill;
     this.disconnectTime = disconnectTime;
@@ -30,23 +32,22 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
     this.io = io;
 
     // the "leak" for the leaky buckets
-    let self = this;
-    setInterval(function () {
-        for (const bucket in self.ipBuckets) {
-            if (self.ipBuckets.hasOwnProperty(bucket)) {
-                self.ipBuckets[bucket] -= 1
-                self.ipBuckets[bucket] = Math.max(self.ipBuckets[bucket], 0);
+    setInterval(() => {
+        for (const bucket in this.ipBuckets) {
+            if (this.ipBuckets.hasOwnProperty(bucket)) {
+                this.ipBuckets[bucket] -= 1
+                this.ipBuckets[bucket] = Math.max(this.ipBuckets[bucket], 0);
             }
 
         }
     }, leakRate);
 
     // periodic clear of empty buckets
-    setInterval(function () {
-        for (const bucket in self.ipBuckets) {
-            if (self.ipBuckets.hasOwnProperty(bucket)) {
-                if (self.ipBuckets[bucket] === 0) {
-                    delete self.ipBuckets[bucket];
+    setInterval(() => {
+        for (const bucket in this.ipBuckets) {
+            if (this.ipBuckets.hasOwnProperty(bucket)) {
+                if (this.ipBuckets[bucket] === 0) {
+                    delete this.ipBuckets[bucket];
                 }
             }
         }
@@ -60,7 +61,7 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
      * @returns {string}    The IP.
      * @private
      */
-    let _get_ip = (socket) => {
+    this._getIp = (socket) => {
         return socket.handshake.address;
     };
 
@@ -72,8 +73,8 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
      * @returns {boolean}   Whether to respond to the socket.
      * @private
      */
-    let _ip_check = (socket) => {
-        let ip = _get_ip(socket);
+    this._ipCheck = (socket) => {
+        let ip = this._getIp(socket);
 
         if (!this.ipBuckets.hasOwnProperty(ip)) {
             this.ipBuckets[ip] = 1;
@@ -94,7 +95,7 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
      * @returns {*}     The return value of the callback
      * @private
      */
-    this._get_callback = (token, event, data) => {
+    this._getCallback = (token, event, data) => {
         if (this.tokenCallbacks.hasOwnProperty(token)) {
             if (this.tokenCallbacks[token].hasOwnProperty(event)) {
                 return this.tokenCallbacks[token][event](token, data, this);
@@ -110,7 +111,7 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
      * @returns {string}    The session token, if it exists.
      * @private
      */
-    this._get_session = (token) => {
+    this._getSession = (token) => {
         if (!this.tokenToSession.hasOwnProperty(token)) {
             console.log("INTERNAL WARNING: _get_session called on a non-existent token.");
             return null;
@@ -127,16 +128,17 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
      * @param socket    The new socket connection.
      * @private
      */
-    this._on_connect = (socket) => {
+    this._onConnect = (socket) => {
 
-        if (!_ip_check(socket)) return;
+        if (!this._ipCheck(socket)) return;
         socket.on('disconnect', (reason) => {
-            this._on_disconnect(socket, reason)
+            this._onDisconnect(socket, reason)
         });
         socket.once('register', (data, fn) => {
-            fn(this._on_register(socket, data))
+            fn(this._onRegister(socket, data))
         });
     };
+    this.io.on('connect', this._onConnect);
 
     /**
      * The callback registered with each socket upon its end-of-session
@@ -152,27 +154,26 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
      * @param reason    The reason for the disconnect. Currently unused.
      * @private
      */
-    this._on_disconnect = (socket, reason) => {
+    this._onDisconnect = (socket, reason) => {
 
         if (!this.sessionToToken.hasOwnProperty(socket.id)) {
             return;
         }
         let token = this.sessionToToken[socket.id];
 
-        let registry = this;
-        this.killTimers[token] = setTimeout(function () {
-            registry._get_callback(token, 'disconnect', null);
-            delete registry.tokenToSession[token];
-            delete registry.tokenToIP[token];
-            delete registry.killTimers[token];
-            delete registry.tokenRooms[token];
-            delete registry.tokenCallbacks[token];
-            delete registry.sessionToToken[socket.id];
+        this.killTimers[token] = setTimeout(() => {
+            this._getCallback(token, 'disconnect', null);
+            delete this.tokenToSession[token];
+            delete this.tokenToIP[token];
+            delete this.killTimers[token];
+            delete this.tokenRooms[token];
+            delete this.tokenCallbacks[token];
+            delete this.sessionToToken[socket.id];
+            delete this.tokenData[token];
 
         }, this.disconnectTime);
-    };
+    }
 
-    io.on('connect', this._on_connect);
 
     /**
      * Registers a new token-socket pair and inserts it into the Registry memory.
@@ -180,12 +181,12 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
      * @returns {string}    The token
      * @private
      */
-    this._register_new_token = (socket) => {
+    this._registerNewToken = (socket) => {
         let newToken = srs();
         this.tokenToSession[newToken] = socket.id;
         this.sessionToToken[socket.id] = newToken;
-        this.tokenToIP[newToken] = _get_ip(socket);
-        registry._get_callback(newToken, 'connect', null);
+        this.tokenToIP[newToken] = this._getIp(socket);
+        registry._getCallback(newToken, 'connect', null);
         return newToken;
     };
 
@@ -200,10 +201,10 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
      * @returns {string|null}   On success, the token. On failure, null.
      * @private
      */
-    this._on_register = (socket, data) => {
+    this._onRegister = (socket, data) => {
 
         // leaky bucket
-        if (!_ip_check(socket)) return;
+        if (!this._ipCheck(socket)) return;
 
         // check that socket doesn't already exist
         if (this.sessionToToken.hasOwnProperty(socket.id)) {
@@ -213,7 +214,7 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
         }
 
         if (data === null) {
-            return this._register_new_token(socket)
+            return this._registerNewToken(socket)
         } else if (typeof (data) === "string") {
             if (this.tokenToSession.hasOwnProperty(data)) {
 
@@ -223,7 +224,7 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
                         data + "\" but tti did not. Assuming user's IP is correct...");
                     ipMatch = true;
                 } else {
-                    ipMatch = (this.tokenToIP[data] === _get_ip(socket));
+                    ipMatch = (this.tokenToIP[data] === this._getIp(socket));
                 }
 
 
@@ -241,9 +242,9 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
                         this.tokenToSession[data] = socket.id;
 
                         if (this.tokenCallbacks.hasOwnProperty(data)) {
-                            this._hookup_callbacks(socket, data, this.tokenCallbacks[data]);
+                            this._hookupCallbacks(socket, data, this.tokenCallbacks[data]);
                         } else {
-                            this._hookup_callbacks(socket, data, this.defaultCallback);
+                            this._hookupCallbacks(socket, data, this.defaultCallback);
                         }
 
 
@@ -252,26 +253,26 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
                         }
 
 
-                        this._get_callback(data, 'reconnect', null);
+                        this._getCallback(data, 'reconnect', null);
 
                         return data;
 
                     } else {
                         console.log("WARNING: User attempted to counterfeit token \"" +
                             data + "\", but user was still active. Sending new token...");
-                        return this._register_new_token(socket);
+                        return this._registerNewToken(socket);
                     }
 
                 } else {
                     console.log("WARNING: User attempted to conterfeit token \"" +
                         data + "\", but IP did not match. Sending new token...");
-                    return this._register_new_token(socket);
+                    return this._registerNewToken(socket);
                 }
 
             } else {
                 console.log("INFO: User attempted to validate with old/invalid string \"" +
                     data + "\". Sending new token...");
-                return this._register_new_token(socket);
+                return this._registerNewToken(socket);
             }
 
 
@@ -282,26 +283,26 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
 
     };
 
-    this._get_callbacks_from_object = (callbacks) => {
+    this._getCallbacksFromObject = (callbacks) => {
         return Object.keys(callbacks).filter(
             x => !['connect', 'reconnect', 'disconnect'].includes(x) &&
                 callbacks.hasOwnProperty(x)
         );
     }
 
-    this._get_callbacks_from_token = (token) => {
+    this._getCallbacksFromToken = (token) => {
         if (this.tokenCallbacks.hasOwnProperty(token)) {
-            return this._get_callbacks_from_object(this.tokenCallbacks[token]);
+            return this._getCallbacksFromObject(this.tokenCallbacks[token]);
         } else {
-            return this._get_callbacks_from_object(this.defaultCallback);
+            return this._getCallbacksFromObject(this.defaultCallback);
         }
     }
 
-    this._hookup_callbacks = (socket, token, callbacks) => {
+    this._hookupCallbacks = (socket, token, callbacks) => {
 
-        this._get_callbacks_from_object(callbacks).map(
+        this._getCallbacksFromObject(callbacks).map(
             x => socket.on(x, (data, fn) => {
-                if (!_ip_check(socket)) return null;
+                if (!this._ipCheck(socket)) return null;
 
                 if (!this.sessionToToken.hasOwnProperty(socket.id)) {
                     console.log("WARNING: User attempted to send frame while unregistered. Not responding...");
@@ -316,9 +317,9 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
 
     }
 
-    this.set_callbacks = (token, callbacks) => {
+    this.setCallbacks = (token, callbacks) => {
 
-        let session = self._get_session(token);
+        let session = self._getSession(token);
         if (session === null) return;
 
 
@@ -331,12 +332,12 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
 
         let socket = self.io.sockets.connected[session];
 
-        this._get_callbacks_from_token(token).map(
+        this._getCallbacksFromToken(token).map(
             x => socket.removeAllListeners(x)
         )
 
         this.tokenCallbacks[token] = callbacks;
-        this._hookup_callbacks(socket, token, callbacks);
+        this._hookupCallbacks(socket, token, callbacks);
 
     };
 
@@ -355,19 +356,13 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
 
     this.setRoom = (token, room) => {
 
-        let session = this._get_session(token);
+        let session = this._getSession(token);
         if (!session) return false;
 
         var sessionActive = this.io.sockets.connected.hasOwnProperty(session);
 
         if (this.tokenRooms.hasOwnProperty(token)) {
             leaveRoom(token);
-        }
-
-        if (this.rooms.hasOwnProperty(room)) {
-            this.rooms[room].add(token);
-        } else {
-            this.rooms[room] = new Set([token]);
         }
 
         this.tokenRooms[token] = room;
@@ -382,17 +377,13 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
 
     this.leaveRoom = (token) => {
 
-        let session = this._get_session(token);
+        let session = this._getSession(token);
         if (!session) return false;
 
         var sessionActive = this.io.sockets.connected.hasOwnProperty(session);
 
         if (this.tokenRooms.hasOwnProperty(token)) {
             if (sessionActive) this.io.sockets.connected[session].leave(this.tokenRooms[token]);
-            this.rooms[this.tokenRooms[token]].delete(token);
-            if (this.rooms[this.tokenRooms[token]].size() === 0) {
-                delete this.rooms[this.tokenRooms[token]];
-            }
             delete this.tokenRooms[token];
         }
 
@@ -401,16 +392,47 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
 
     };
 
-    this.getMembers = (room) => {
-        if (this.rooms.hasOwnProperty(room)) {
-            return this.rooms[room];
+    this.getRoom = (token) => {
+
+        let session = this._getSession(token);
+        if (!session) return false;
+
+        if (this.tokenRooms.hasOwnProperty(token)) {
+            return this.tokenRooms[token];
         }
-        return new Set();
-    };
+
+        return null;
+
+    }
 
     this.sendRoom = (room, event, data, callback) => {
         this.io.sockets.to(room).emit(event, data, callback);
     };
 
-}
+    this.setToken = (token, key, val) => {
+
+        if (!this.tokenToSession.hasOwnProperty(token)) {
+            console.log("INTERNAL WARNING: Attempted to set data of non-existent token.");
+            return null;
+        }
+
+        if (!this.tokenData.hasOwnProperty(token)) {
+            this.tokenData[token] = {};
+        }
+        this.tokenData[token][key] = val;
+        return true;
+    }
+
+    this.getToken = (token, key) => {
+        if (!this.tokenToSession.hasOwnProperty(token)) {
+            console.log("INTERNAL WARNING: Attempted to set data of non-existent token.");
+            return null;
+        }
+
+        if (!this.tokenData.hasOwnProperty(token)) {
+            return null;
+        }
+        return this.tokenData[token][key];
+    }
+};
 module.exports = Registry;

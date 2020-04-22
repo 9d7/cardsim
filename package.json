@@ -1,0 +1,7 @@
+{
+  "name": "cardsim",
+  "version": "1.0.0",
+  "dependencies": {
+    "secure-random-string": "^1.1.3"
+  }
+}
