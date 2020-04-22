@@ -13,8 +13,10 @@ let Rooms = function () {
 
     /**
      * Creates a room.
+     * @param token             The token of the user that created the room.
      * @param game              The name of the game the room is meant to play.
-     * @returns {string|null}   The ID of the room that was created, or null if no room was.
+     * @param username          The username of the user that created the room.
+     * @param registry          The registry.
      */
     this.createRoom = (token, game, username, registry) => {
 

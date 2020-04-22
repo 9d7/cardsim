@@ -1,3 +1,5 @@
+var schema = require('duck-type').create();
+
 let LoginCallbacks = function (rooms) {
 
     let checkUsername = (username) => {
@@ -19,26 +21,26 @@ let LoginCallbacks = function (rooms) {
 
     this.submitJoin = (token, data, registry) => {
 
-        // error for issues with packet format
-        var genericError = {
-            accepted: false,
-            response: {
-                modal: "genericError"
-            }
-        };
-
         // check packet format
-        if (typeof (data) !== 'object') return genericError;
+        try {
 
-        if (!data.hasOwnProperty('username')) return genericError;
-        if (!data.hasOwnProperty('roomCode')) return genericError;
+            schema.assert(data).is({
+                username: String,
+                roomCode: String
+            });
 
-        var username = data[username];
-        var roomCode = data[roomCode];
+        } catch (e) {
+            console.log("WARNING: Invalid submitJoin packet received.");
+            return {
+                accepted: false,
+                response: {
+                    modal: "genericError"
+                }
+            };
+        }
 
-        if (typeof (username) !== 'string') return genericError;
-        if (typeof (roomCode) !== 'string') return genericError;
-
+        var username = data.username;
+        var roomCode = data.roomCode;
         usernameValidity = checkUsername(username);
 
         var roomCodeValidity = (roomCode.search(/^[A-Za-z]{3} [A-Za-z]{3}$/) !== 0);
@@ -72,7 +74,7 @@ let LoginCallbacks = function (rooms) {
         }
 
 
-        return this.joinRoom(token, roomCode, username, registry);
+        return rooms.joinRoom(token, roomCode, username, registry);
 
     }
 
@@ -100,16 +102,20 @@ let LoginCallbacks = function (rooms) {
 
         usernameValidity = checkUsername(username);
 
-        if (usernameValidity !== "") {
+        if (!usernameValidity) {
             return {
                 accepted: false,
                 response: {
-                    username: usernameValidity
+                    username: "serverError"
                 }
             };
         }
 
     };
+
+    this.disconnect = (token, data, registry) => {
+        rooms.onDisconnect(token, registry);
+    }
 
 
 }

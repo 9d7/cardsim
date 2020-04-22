@@ -7,6 +7,8 @@ $(document).ready(function () {
         usernameEmpty: "A username is required.",
         roomCodeEmpty: "A room code is required.",
         wrongLength: "Username must be between 3 and 16 characters.",
+        wrongFormat: "The room code should be two three-letter words, " +
+            "separated by a space, like \"bed bug.\"",
         invalidCharacters: "Username must only use letters, numbers, and spaces.",
         duplicateSpaces: "Username cannot contain duplicate spaces.",
         affixSpaces: "Username cannot start or end with spaces.",
@@ -80,19 +82,21 @@ $(document).ready(function () {
 
         let usernameError = checkUsername(userVal);
         let roomCodeError = checkRoomCode(roomVal);
+        console.log(roomCodeError);
 
         if (usernameError !== "") {
             $('#usernameFeedback').text(responses[usernameError]);
-            username.removeClass('is-valid').addClass('is-invalid');
+            username.addClass('is-invalid');
         } else {
-            username.removeClass('is-invalid').addClass('is-valid');
+            username.removeClass('is-invalid');
         }
+
 
         if (roomCodeError !== "") {
             $('#roomCodeFeedback').text(responses[roomCodeError]);
-            roomCode.removeClass('is-valid').addClass('is-invalid');
+            roomCode.addClass('is-invalid');
         } else {
-            roomCode.removeClass('is-invalid').addClass('is-valid');
+            roomCode.removeClass('is-invalid');
         }
 
         if (usernameError === "" && roomCodeError === "") {
@@ -102,9 +106,13 @@ $(document).ready(function () {
                 roomCode: roomVal
             }, (data) => {
 
+                console.log("Hiiiii");
                 if (data.accepted) {
 
                 } else {
+
+                    console.log(data.response);
+
                     if (data.response.username !== undefined) {
                         $('#usernameFeedback').text(responses[data.response.username]);
                         username.removeClass('is-valid').addClass('is-invalid');

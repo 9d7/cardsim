@@ -30,6 +30,7 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
     this.disconnectTime = disconnectTime;
     this.defaultCallback = defaultCallback;
     this.io = io;
+    this.leakRate = leakRate;
 
     // the "leak" for the leaky buckets
     setInterval(() => {
@@ -82,7 +83,10 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
             this.ipBuckets[ip]++;
         }
 
-        return (this.ipBuckets[ip] <= this.maxFill);
+        let retval = (this.ipBuckets[ip] <= this.maxFill);
+        if (!retval && (this.ipBuckets[ip] <= this.maxFill + 1)) {
+            socket.emit('throttled');
+        }
     };
 
     /**
@@ -186,7 +190,7 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
         this.tokenToSession[newToken] = socket.id;
         this.sessionToToken[socket.id] = newToken;
         this.tokenToIP[newToken] = this._getIp(socket);
-        registry._getCallback(newToken, 'connect', null);
+        this._getCallback(newToken, 'connect', null);
         return newToken;
     };
 
@@ -305,7 +309,8 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
                 if (!this._ipCheck(socket)) return null;
 
                 if (!this.sessionToToken.hasOwnProperty(socket.id)) {
-                    console.log("WARNING: User attempted to send frame while unregistered. Not responding...");
+                    console.log("WARNING: User attempted to send frame while unregistered. Sending signal...");
+                    socket.emit('unregistered');
                     return null;
                 }
 
