@@ -26,7 +26,6 @@ $(document).ready(function () {
         var title = button.data('title');
 
         var game = button.data('game');
-        $('#joinRoom').data('game', game);
         $('#createRoom').data('game', game);
 
         // set name to old value
@@ -42,34 +41,81 @@ $(document).ready(function () {
 
     let checkUsername = (username) => {
 
+        let userVal = username.val();
+
         var usernameError = "";
         // check username validity
-        if (username.length === 0) {
+        if (userVal.length === 0) {
             usernameError = "usernameEmpty";
-        } else if (username.length < 3 || username.length > 16) {
+        } else if (userVal.length < 3 || userVal.length > 16) {
             usernameError = "wrongLength";
-        } else if (username.search(/^[A-Za-z0-9 ]+$/) === -1) {
+        } else if (userVal.search(/^[A-Za-z0-9 ]+$/) === -1) {
             usernameError = "invalidCharacters";
-        } else if (username.search(/ {2}/) !== -1) {
+        } else if (userVal.search(/ {2}/) !== -1) {
             usernameError = "duplicateSpaces";
-        } else if (username[0] === ' ' || username[username.length - 1] === ' ') {
+        } else if (userVal[0] === ' ' || userVal[userVal.length - 1] === ' ') {
             usernameError = "affixSpaces";
         }
 
-        return usernameError;
+        if (usernameError !== "") {
+            $('#usernameFeedback').text(responses[usernameError]);
+            username.addClass('is-invalid');
+            return false;
+        } else {
+            localStorage.setItem('name', userVal);
+            username.removeClass('is-invalid');
+            return true;
+        }
     }
 
     let checkRoomCode = (roomCode) => {
 
+        let roomVal = roomCode.val();
         var roomCodeError = "";
 
-        if (roomCode.length === 0) {
+        if (roomVal.length === 0) {
             roomCodeError = "roomCodeEmpty";
-        } else if (roomCode.search(/^[A-Za-z]{3} [A-Za-z]{3}$/) !== 0) {
+        } else if (roomVal.search(/^[A-Za-z]{3} [A-Za-z]{3}$/) !== 0) {
             roomCodeError = "wrongFormat";
         }
 
-        return roomCodeError;
+        if (roomCodeError !== "") {
+            $('#roomCodeFeedback').text(responses[roomCodeError]);
+            roomCode.addClass('is-invalid');
+            return false;
+        } else {
+            roomCode.removeClass('is-invalid');
+            return true;
+        }
+
+    }
+
+    joinResponse = (data) => {
+
+        if (data.accepted) {
+
+            window.location.replace('/waiting');
+
+        } else {
+
+            if (data.response.username !== undefined) {
+                $('#usernameFeedback').text(responses[data.response.username]);
+                username.removeClass('is-valid').addClass('is-invalid');
+            }
+
+            if (data.response.roomCode !== undefined) {
+                $('#roomCodeFeedback').text(responses[data.response.roomCode]);
+                roomCode.removeClass('is-valid').addClass('is-invalid');
+            }
+
+            if (data.response.modal !== undefined) {
+                let modalAlert = $('#modalAlert');
+                modalAlert.text(responses[data.response.modal]);
+                modalAlert.collapse('show');
+            }
+
+        }
+
     }
 
     // on join room
@@ -81,57 +127,15 @@ $(document).ready(function () {
         let roomVal = roomCode.val();
         let userVal = username.val();
 
-        let usernameError = checkUsername(userVal);
-        let roomCodeError = checkRoomCode(roomVal);
+        let usernameOK = checkUsername(username);
+        let roomCodeOK = checkRoomCode(roomname);
 
-        if (usernameError !== "") {
-            $('#usernameFeedback').text(responses[usernameError]);
-            username.addClass('is-invalid');
-        } else {
-            localStorage.setItem('name', userVal);
-            username.removeClass('is-invalid');
-        }
-
-
-        if (roomCodeError !== "") {
-            $('#roomCodeFeedback').text(responses[roomCodeError]);
-            roomCode.addClass('is-invalid');
-        } else {
-            roomCode.removeClass('is-invalid');
-        }
-
-        if (usernameError === "" && roomCodeError === "") {
+        if (usernameOK && roomCodeOK) {
 
             safe_emit(socket,'submitJoin', {
                 username: userVal,
                 roomCode: roomVal
-            }, (data) => {
-
-                if (data.accepted) {
-
-                    window.location.replace('/waiting');
-
-                } else {
-
-                    if (data.response.username !== undefined) {
-                        $('#usernameFeedback').text(responses[data.response.username]);
-                        username.removeClass('is-valid').addClass('is-invalid');
-                    }
-
-                    if (data.response.roomCode !== undefined) {
-                        $('#roomCodeFeedback').text(responses[data.response.roomCode]);
-                        roomCode.removeClass('is-valid').addClass('is-invalid');
-                    }
-
-                    if (data.response.modal !== undefined) {
-                        let modalAlert = $('#modalAlert');
-                        modalAlert.text(responses[data.response.modal]);
-                        modalAlert.collapse('show');
-                    }
-
-                }
-
-            })
+            }, joinResponse);
 
 
         }
@@ -141,6 +145,19 @@ $(document).ready(function () {
     // on create room
     $('#createRoom').on('click', function (event) {
 
+        let username = $('#username');
+        let userVal = username.val();
+
+        let game = $(this).data('game');
+
+        if (checkUsername(username)) {
+
+            safe_emit(socket, 'submitCreate', {
+                username: userVal,
+                game: game
+            }, joinResponse);
+
+        }
 
 
     });

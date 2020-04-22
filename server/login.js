@@ -80,26 +80,25 @@ let LoginCallbacks = function (rooms) {
 
     this.submitCreate = (token, data, registry) => {
 
-        // error for issues with packet format
-        var genericError = {
-            accepted: false,
-            response: {
-                modal: "genericError"
-            }
-        };
-
         // check packet format
-        if (typeof (data) !== 'object') return genericError;
+        try {
 
-        if (!data.hasOwnProperty('username')) return genericError;
-        if (!data.hasOwnProperty('game')) return genericError;
+            schema.assert(data).is({
+                username: String,
+                game: String
+            });
 
-        var username = data[username];
-        var game = data[game];
+        } catch (e) {
+            console.log("WARNING: Invalid submitJoin packet received.");
+            return {
+                accepted: false,
+                response: {
+                    modal: "genericError"
+                }
+            };
+        }
 
-        if (typeof (username) !== 'string') return genericError;
-        if (typeof (game) !== 'string') return genericError;
-
+        let username = data.username;
         usernameValidity = checkUsername(username);
 
         if (!usernameValidity) {
@@ -110,6 +109,8 @@ let LoginCallbacks = function (rooms) {
                 }
             };
         }
+
+        return rooms.createRoom(token, data.game, username, registry);
 
     };
 

@@ -26,6 +26,11 @@
     }
 
     let rooms = new Rooms();
+
+    rooms.registerRoomType('secret', {
+        max_players: 10
+    })
+
     let registry = new Registry(
         io,
         1000,

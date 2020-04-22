@@ -1,4 +1,5 @@
 const fs = require('fs');
+const srs = require('secure-random-string');
 
 let Rooms = function () {
 
@@ -25,6 +26,9 @@ let Rooms = function () {
 
     this.registerRoomType = (game, data) => {
         this.roomTypes[game] = data;
+
+        console.log(this.roomCodes);
+        console.log(this.rooms);
     };
 
     /**
@@ -45,8 +49,8 @@ let Rooms = function () {
      */
     this.createRoom = (token, game, username, registry) => {
 
-        if (!this.roomCodes.hasOwnProperty(game)) {
-            console.log("WARNING: Room was created with unsupported game");
+        if (!this.roomTypes.hasOwnProperty(game)) {
+            console.log("WARNING: Room was created with unsupported game \"" + game + "\"");
             return {
                 accepted: false,
                 response: {
@@ -89,9 +93,11 @@ let Rooms = function () {
         this.rooms[id] = {
             game: game,
             code: code,
-            members: Set([token])
+            members: new Set([token])
         }
+
         registry.setRoom(token, id);
+        registry.setToken(token, 'name', username);
 
         return {accepted: true};
 
@@ -145,7 +151,7 @@ let Rooms = function () {
         );
 
         // username found, no duplicates
-        if (members.includes(username)) {
+        if (members.includes(username.toLowerCase())) {
             return {
                 accepted: false,
                 response: {
@@ -156,6 +162,7 @@ let Rooms = function () {
 
         // success! join the room
         registry.setRoom(token, room);
+        registry.setToken(token, 'name', username);
 
 
         return {
