@@ -1,15 +1,40 @@
+const fs = require('fs');
+
 let Rooms = function () {
 
     this.roomCodes = {}
     this.rooms = {}
     this.roomTypes = {}
 
-    this.registerRoomType = (game, max_players, data) => {
-        this.roomTypes[game] = {
-            max_players: max_players,
-            data: data
-        }
+    /**
+     * room type:
+     * {
+     *     game: String,
+     *     code: String,
+     *     members: Set,
+     * }
+     *
+     * game type:
+     * {
+     *     max_players: Number,
+     *     leaveCallback: fn,
+     *     joinCallback: fn,
+     *
+     * }
+     */
+
+    this.registerRoomType = (game, data) => {
+        this.roomTypes[game] = data;
     };
+
+    /**
+     * Callback to use on user disconnect.
+     * @param token
+     * @param registry
+     */
+    this.onDisconnect = (token, registry) => {
+        this.leaveRoom(token, registry);
+    }
 
     /**
      * Creates a room.
@@ -21,11 +46,54 @@ let Rooms = function () {
     this.createRoom = (token, game, username, registry) => {
 
         if (!this.roomCodes.hasOwnProperty(game)) {
-            return "gameDoesNotExist";
+            console.log("WARNING: Room was created with unsupported game");
+            return {
+                accepted: false,
+                response: {
+                    modal: "genericError"
+                }
+            };
         }
 
+        // if user is in a room, force them to leave
+        this.leaveRoom(token, registry);
 
+        let success = false;
+        for (let i = 0; i < 100; i++) {
+            let numWords = this.words.length / (this.word_len + 1);
+            console.log(numWords);
+            let rand1 = Math.floor(Math.random() * numWords) * (this.word_len + 1);
+            let rand2 = Math.floor(Math.random() * numWords) * (this.word_len + 1);
 
+            var code = this.words.slice(rand1, rand1 + this.word_len) + " " +
+                this.words.slice(rand2, rand2 + this.word_len);
+
+            if (!this.roomCodes.hasOwnProperty(code)) {
+                success = true;
+                break;
+            }
+        }
+
+        if (!success) {
+            return {
+                accepted: false,
+                response: {
+                    modal: "noRoomGeneration"
+                }
+            };
+        }
+
+        let id = srs();
+
+        this.roomCodes[code] = id;
+        this.rooms[id] = {
+            game: game,
+            code: code,
+            members: Set([token])
+        }
+        registry.setRoom(token, id);
+
+        return {accepted: true};
 
 
 
@@ -52,6 +120,17 @@ let Rooms = function () {
         if (!this.rooms.hasOwnProperty(room)) {
             console.log("WARNING: Room code does not have matching room.");
             return noRoomFound;
+        }
+
+        // check if room is full
+        if (this.rooms[room].members.size >=
+            this.roomTypes[this.rooms[room].game].max_players) {
+            return {
+                accepted: false,
+                response: {
+                    roomCode: "roomFull"
+                }
+            };
         }
 
         // get all usernames in room
@@ -87,6 +166,29 @@ let Rooms = function () {
 
     this.leaveRoom = (token, registry) => {
 
+        var room = registry.getRoom(token);
+
+        if (room === null) {
+            return;
+        }
+
+        if (!this.rooms.hasOwnProperty(room)) {
+            console.log("WARNING: User had room that was not in room list.");
+            return;
+        }
+
+        this.rooms[room].delete(token);
+        registry.leaveRoom(token);
+
+        if (this.rooms[room].size === 0) {
+            // disband room
+            var code = this.rooms[room].code;
+            delete this.roomCodes[code];
+            delete this.rooms[room];
+
+        }
+
+
     }
 
     this.getMembers = (id) => {
@@ -98,6 +200,14 @@ let Rooms = function () {
     }
 
 
-
 }
+
+fs.readFile('./resources/words.txt', (err, data) => {
+    if (err) throw err;
+
+    Rooms.prototype.words = data;
+
+});
+Rooms.prototype.word_len = 3;
+
 module.exports = Rooms;

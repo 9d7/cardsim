@@ -83,10 +83,13 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
             this.ipBuckets[ip]++;
         }
 
+        console.log(this.ipBuckets[ip]);
+
         let retval = (this.ipBuckets[ip] <= this.maxFill);
         if (!retval && (this.ipBuckets[ip] <= this.maxFill + 1)) {
             socket.emit('throttled');
         }
+        return retval;
     };
 
     /**
@@ -134,7 +137,6 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
      */
     this._onConnect = (socket) => {
 
-        if (!this._ipCheck(socket)) return;
         socket.on('disconnect', (reason) => {
             this._onDisconnect(socket, reason)
         });
@@ -190,6 +192,7 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
         this.tokenToSession[newToken] = socket.id;
         this.sessionToToken[socket.id] = newToken;
         this.tokenToIP[newToken] = this._getIp(socket);
+        this._hookupCallbacks(socket, newToken, this.defaultCallback);
         this._getCallback(newToken, 'connect', null);
         return newToken;
     };
@@ -208,7 +211,10 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
     this._onRegister = (socket, data) => {
 
         // leaky bucket
-        if (!this._ipCheck(socket)) return;
+        if (!this._ipCheck(socket)) {
+            socket.emit('throttled');
+            return;
+        }
 
         // check that socket doesn't already exist
         if (this.sessionToToken.hasOwnProperty(socket.id)) {
@@ -306,6 +312,7 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
 
         this._getCallbacksFromObject(callbacks).map(
             x => socket.on(x, (data, fn) => {
+
                 if (!this._ipCheck(socket)) return null;
 
                 if (!this.sessionToToken.hasOwnProperty(socket.id)) {

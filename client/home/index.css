@@ -19,6 +19,7 @@ body {
 
 .room_input {
   max-width: 6rem;
+  font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
 }
 
 /* Other Classes for Page Styling */

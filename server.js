@@ -26,10 +26,9 @@
     }
 
     let rooms = new Rooms();
-
     let registry = new Registry(
         io,
-        500,
+        1000,
         20,
         60 * 5 * 1000,
         10 * 1000,

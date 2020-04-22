@@ -16,7 +16,8 @@ $(document).ready(function () {
         serverError: "Please double-check this.",
         noRoomFound: "No room was found with that name.",
         usernameUsed: "That username already exists in that room. Please choose a unique one.",
-        noRoomCreated: "The server is a bit too busy right now. Please try again later."
+        noRoomCreated: "The server is a bit too busy right now. Please try again later.",
+        roomFull: "That room is full."
     }
 
     // modal customization
@@ -82,12 +83,12 @@ $(document).ready(function () {
 
         let usernameError = checkUsername(userVal);
         let roomCodeError = checkRoomCode(roomVal);
-        console.log(roomCodeError);
 
         if (usernameError !== "") {
             $('#usernameFeedback').text(responses[usernameError]);
             username.addClass('is-invalid');
         } else {
+            localStorage.setItem('name', userVal);
             username.removeClass('is-invalid');
         }
 
@@ -101,17 +102,16 @@ $(document).ready(function () {
 
         if (usernameError === "" && roomCodeError === "") {
 
-            socket.emit('submitJoin', {
+            safe_emit(socket,'submitJoin', {
                 username: userVal,
                 roomCode: roomVal
             }, (data) => {
 
-                console.log("Hiiiii");
                 if (data.accepted) {
 
-                } else {
+                    window.location.replace('/waiting');
 
-                    console.log(data.response);
+                } else {
 
                     if (data.response.username !== undefined) {
                         $('#usernameFeedback').text(responses[data.response.username]);
@@ -157,9 +157,9 @@ $(document).ready(function () {
     });
     modalAlert.on('hidden.bs.collapse', function (event) {
         $('#joinGame').modal('handleUpdate');
-    })
+    });
     modalAlert.on('click', function (event) {
         $(this).collapse('hide');
-    })
+    });
 
 });
