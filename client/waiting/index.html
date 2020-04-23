@@ -22,22 +22,39 @@
     <div class="container px-5 mt-5 justify-content-center">
 
         <div class="jumbotron p-0 shadow-lg border" style="position: relative;">
-            <button id="back-button" class="shadow-lg btn btn-dark m-0 p-2">
-                <svg class="bi bi-arrow-left-short text-white" width="3em" height="3em" viewBox="0 0 16 16"
-                     fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd"
-                          d="M7.854 4.646a.5.5 0 010 .708L5.207 8l2.647 2.646a.5.5 0 01-.708.708l-3-3a.5.5 0 010-.708l3-3a.5.5 0 01.708 0z"
-                          clip-rule="evenodd"/>
-                    <path fill-rule="evenodd" d="M4.5 8a.5.5 0 01.5-.5h6.5a.5.5 0 010 1H5a.5.5 0 01-.5-.5z"
-                          clip-rule="evenodd"/>
-                </svg>
+            <button id="back-button" class="shadow-lg btn btn-danger m-0 p-2" data-toggle="tooltip" data-placement="top"
+                    data-html="true" data-delay="{&quot;show&quot;: 500, &quot;hide&quot;:300}"
+                    title="<div class=&quot;m-1&quot;><h6 class=&quot;m-0 p-0&quot;>Go back</h6></div>" data-trigger="hover">
+                <div class="m-0 p-0 icon-wrap">
+                    <svg class="bi bi-arrow-left" width="2em" height="2em" viewBox="0 0 16 16" fill="currentColor"
+                         xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd"
+                              d="M5.854 4.646a.5.5 0 010 .708L3.207 8l2.647 2.646a.5.5 0 01-.708.708l-3-3a.5.5 0 010-.708l3-3a.5.5 0 01.708 0z"
+                              clip-rule="evenodd"/>
+                        <path fill-rule="evenodd" d="M2.5 8a.5.5 0 01.5-.5h10.5a.5.5 0 010 1H3a.5.5 0 01-.5-.5z"
+                              clip-rule="evenodd"/>
+                    </svg>
+                </div>
             </button>
 
-            <div class="m-3">
+            <button id="ready-button" class="shadow-lg btn btn-primary m-0 p-2 collapse" data-toggle="tooltip" data-placement="top"
+                    data-html="true" data-delay="{&quot;show&quot;: 500, &quot;hide&quot;:300}"
+                    title="<div class=&quot;m-1&quot;><h6 class=&quot;m-0 p-0&quot;>Ready up</h6></div>" data-trigger="hover">
+                <div class="m-0 p-0 icon-wrap">
+                    <svg class="bi bi-check" width="2em" height="2em" viewBox="0 0 16 16" fill="currentColor"
+                         xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd"
+                              d="M13.854 3.646a.5.5 0 010 .708l-7 7a.5.5 0 01-.708 0l-3.5-3.5a.5.5 0 11.708-.708L6.5 10.293l6.646-6.647a.5.5 0 01.708 0z"
+                              clip-rule="evenodd"/>
+                    </svg>
+                </div>
+            </button>
+
+            <div class="m-3 px-5">
                 <h1 class="display-4 text-center" id="status">Loading...</h1>
-                <div class="container text-center justify-content-center collapse show">
+                <div class="container text-center justify-content-center">
                     <p class="m-0">Room Code:</p>
-                    <h2><code class="text-primary" id="roomCode">big ben</code></h2>
+                    <h2><code class="text-primary" id="roomCode">... ...</code></h2>
                     <hr class="mt-2 mb-3"/>
                     <div class="container center-text  mt-2">
                         <h4>Game: <span id="gameName">...</span></h4>
@@ -46,46 +63,12 @@
             </div>
         </div>
 
-        <div class="container text-center collapse show" id="player-list">
-            <div class="row my-3">
-                <div class="col">
-                    <h3 class="text-white player">eric</h3>
-                </div>
-                <div class="col">
-                    <h3 class="text-white player">eric</h3>
-                </div>
-                <div class="col">
-                    <h3 class="text-white player">eric</h3>
-                </div>
-            </div>
-            <div class="row my-3">
-                <div class="col">
-                    <h3 class="text-white player">eric</h3>
-                </div>
-                <div class="col">
-                    <h3 class="text-white player">eric</h3>
-                </div>
-                <div class="col">
-                    <h3 class="text-white player">eric</h3>
-                </div>
-            </div>
-            <div class="row my-3">
-                <div class="col">
-                    <h3 class="text-white player">eric</h3>
-                </div>
-                <div class="col">
-                    <h3 class="text-white player">eric</h3>
-                </div>
-                <div class="col">
-                    <h3 class="text-white player">eric</h3>
-                </div>
-            </div>
+        <div class="container text-center" id="player-list">
+
         </div>
     </div>
 </div>
 
-
-</div>
 
 <footer id="sticky-footer" class="py-4 bg-dark text-white-50">
     <div class="container text-center">
@@ -106,6 +89,8 @@
         integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
         crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.1.0/mustache.min.js"
+        integrity="sha256-MPgtcamIpCPKRRm1ppJHkvtNBAuE71xcOM+MmQytXi8=" crossorigin="anonymous"></script>
 <script src="../js/base_io.js"></script>
 <script src="waiting.js"></script>
 <script src="../js/background.js"></script>

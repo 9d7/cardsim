@@ -27,6 +27,9 @@ var registry = new Registry(
     20,
     60 * 5 * 1000,
     10 * 1000,
-    new Callbacks(rooms, new Waiting.registry(rooms))
+    {
+        default: new Callbacks(rooms),
+        waiting: new Waiting.registry(rooms)
+    }
 );
 

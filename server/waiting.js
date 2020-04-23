@@ -3,7 +3,7 @@ var schema = require('duck-type').create()
 let registryCallbacks = function (rooms) {
 
     this.connect = (token, data, registry) => {
-        console.log("WARNING: User connected into non-default callbacks");
+        console.warn("WARNING: User connected into non-default callbacks");
     }
 
     this.disconnect = (token, data, registry) => {
@@ -18,17 +18,15 @@ let registryCallbacks = function (rooms) {
 
     this.getData = (token, data, registry) => {
 
-        console.log("hi");
-
         let roomID = registry.getRoom(token);
         let room = rooms.getRoom(roomID);
         if (room === null) {
-            console.log("WARNING: User reconnected in waiting phase without room");
+            console.warn("WARNING: User reconnected in waiting phase without room");
             return;
         }
 
         if (!rooms.roomTypes.hasOwnProperty(room.game)) {
-            console.log("WARNING: Room does not know about game " + room.game);
+            console.warn("WARNING: Room does not know about game " + room.game);
             return;
         }
 
@@ -41,14 +39,14 @@ let registryCallbacks = function (rooms) {
             min_players: game.min_players,
             members: rooms.getUsernames(registry, roomID)
         }
-        console.log(returnPacket);
 
         return returnPacket;
 
     }
 
     this.leaveRoom = (token, data, registry) => {
-
+        rooms.leaveRoom(token, registry);
+        return 1;
     }
 
 }
@@ -56,16 +54,16 @@ let registryCallbacks = function (rooms) {
 let roomCallbacks = function () {
 
     this.join = (room, token, registry, rooms) => {
-
-        rooms.send(room, 'userUpdate', {
+        console.log("received");
+        registry.sendRoom(room, 'userUpdate', {
             members: rooms.getUsernames(registry, room)
         });
 
     }
 
     this.leave = (room, token, registry, rooms) => {
-
-        rooms.send(room, 'userUpdate', {
+        console.log("received");
+        registry.sendRoom(room, 'userUpdate', {
             members: rooms.getUsernames(registry, room)
         });
 

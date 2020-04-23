@@ -92,11 +92,7 @@ $(document).ready(function () {
 
     joinResponse = (data) => {
 
-        if (data.accepted) {
-
-            window.location.replace('/waiting');
-
-        } else {
+        if (!data.accepted) {
 
             if (data.response.username !== undefined) {
                 $('#usernameFeedback').text(responses[data.response.username]);

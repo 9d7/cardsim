@@ -1,6 +1,6 @@
 var schema = require('duck-type').create();
 
-let LoginCallbacks = function (rooms, waitingCallbacks) {
+let LoginCallbacks = function (rooms) {
 
     let checkUsername = (username) => {
         // check username validity
@@ -30,7 +30,7 @@ let LoginCallbacks = function (rooms, waitingCallbacks) {
             });
 
         } catch (e) {
-            console.log("WARNING: Invalid submitJoin packet received.");
+            console.warn("WARNING: Invalid submitJoin packet received.");
             return {
                 accepted: false,
                 response: {
@@ -76,7 +76,7 @@ let LoginCallbacks = function (rooms, waitingCallbacks) {
 
         let retval = rooms.joinRoom(token, roomCode, username, registry);
         if (retval.accepted) {
-            registry.setCallbacks(token, waitingCallbacks);
+            registry.setCallbacks(token, 'waiting');
         }
         return retval;
 
@@ -93,7 +93,7 @@ let LoginCallbacks = function (rooms, waitingCallbacks) {
             });
 
         } catch (e) {
-            console.log("WARNING: Invalid submitJoin packet received.");
+            console.warn("WARNING: Invalid submitJoin packet received.");
             return {
                 accepted: false,
                 response: {
@@ -117,7 +117,7 @@ let LoginCallbacks = function (rooms, waitingCallbacks) {
 
         let retval = rooms.createRoom(token, data.game, username, registry);
         if (retval.accepted) {
-            registry.setCallbacks(token, waitingCallbacks);
+            registry.setCallbacks(token, 'waiting');
         }
         return retval;
 

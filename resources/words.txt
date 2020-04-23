@@ -102,7 +102,6 @@ red
 fog
 hue
 kit
-sex
 ton
 job
 lag
@@ -170,14 +169,12 @@ amp
 are
 cab
 day
-god
 gut
 jaw
 rat
 raw
 sop
 war
-ass
 bin
 dew
 dun
@@ -271,7 +268,6 @@ dye
 elf
 era
 fry
-gay
 gnu
 ivy
 jug
@@ -315,7 +311,6 @@ win
 alb
 ebb
 fad
-fag
 fen
 fun
 hem
@@ -398,3 +393,8 @@ ken
 lab
 lye
 nib
+nix
+paw
+pun
+soy
+yes

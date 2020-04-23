@@ -17,11 +17,31 @@ body {
 #back-button {
   position: absolute;
   left: 0;
-  top: 0;
-  transform: translate(-40%, -40%);
+  top: 50%;
+  transform: translate(-40%, -50%);
   border-radius: 50%;
 }
 
+#ready-button {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translate(-60%, -50%);
+  border-radius: 50%;
+}
+
+.icon-wrap {
+  position: relative;
+  width: 3em;
+  height: 3em;
+}
+
+svg {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
 
 #page-content {
   background: #007bff;

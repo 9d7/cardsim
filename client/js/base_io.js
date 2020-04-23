@@ -18,6 +18,10 @@ const base_io = (socket, onConnect) => {
 
     })
 
+    socket.on('disconnect', function () {
+        unregistered();
+    })
+
 
     let commonAlert = $('#commonAlert');
     commonAlert.on('click', function (event) {

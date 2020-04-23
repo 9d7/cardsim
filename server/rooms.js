@@ -34,17 +34,17 @@ let Rooms = function (defaultCallbacks) {
 
 
         if (!this.rooms.hasOwnProperty(room)){
-            console.log("WARNING: Callback requested for invalid room.");
+            console.warn("WARNING: Callback requested for invalid room.");
             return;
         }
 
         let roomObj = this.rooms[room];
 
         if (room.inGame) {
-            let callbacks = this.roomTypes[roomObj.game];
+            let callbacks = this.roomTypes[roomObj.game].callbacks;
 
-            if (this.roomTypes[roomObj.game].hasOwnProperty(event)) {
-                return this.defaultCallbacks[event](room, token, registry, this);
+            if (callbacks.hasOwnProperty(event)) {
+                return callbacks[event](room, token, registry, this);
             }
         } else {
             if (this.defaultCallbacks.hasOwnProperty(event)) {
@@ -77,7 +77,7 @@ let Rooms = function (defaultCallbacks) {
     this.createRoom = (token, game, username, registry) => {
 
         if (!this.roomTypes.hasOwnProperty(game)) {
-            console.log("WARNING: Room was created with unsupported game \"" + game + "\"");
+            console.warn("WARNING: Room was created with unsupported game \"" + game + "\"");
             return {
                 accepted: false,
                 response: {
@@ -92,7 +92,6 @@ let Rooms = function (defaultCallbacks) {
         let success = false;
         for (let i = 0; i < 100; i++) {
             let numWords = this.words.length / (this.word_len + 1);
-            console.log(numWords);
             let rand1 = Math.floor(Math.random() * numWords) * (this.word_len + 1);
             let rand2 = Math.floor(Math.random() * numWords) * (this.word_len + 1);
 
@@ -138,7 +137,7 @@ let Rooms = function (defaultCallbacks) {
     this.getUsernames = (registry, room) => {
         let members = this.getMembers(room);
         if (room === null) {
-            console.log("WARNING: getUsernames called on invalid room");
+            console.warn("WARNING: getUsernames called on invalid room");
 
         }
         return Array.from(members).map(
@@ -171,7 +170,7 @@ let Rooms = function (defaultCallbacks) {
 
         // didn't find roomID
         if (!this.rooms.hasOwnProperty(room)) {
-            console.log("WARNING: Room code does not have matching room.");
+            console.warn("WARNING: Room code does not have matching room.");
             return noRoomFound;
         }
 
@@ -213,9 +212,6 @@ let Rooms = function (defaultCallbacks) {
         registry.setToken(token, 'name', username);
         this._getCallback(room, 'join', token, registry);
 
-        console.log(this.rooms);
-        console.log(this.roomCodes);
-
         return {
             accepted: true
         };
@@ -224,6 +220,8 @@ let Rooms = function (defaultCallbacks) {
 
     this.leaveRoom = (token, registry) => {
 
+        registry.setCallbacks(token, 'default');
+
         var room = registry.getRoom(token);
 
         if (room === null) {
@@ -231,17 +229,16 @@ let Rooms = function (defaultCallbacks) {
         }
 
         if (!this.rooms.hasOwnProperty(room)) {
-            console.log("WARNING: in leaveRoom, User had room that was not in room list.");
+            console.warn("WARNING: in leaveRoom, User had room that was not in room list.");
             return;
         }
-
 
         this._getCallback(room, 'leaving', token, registry);
         this.rooms[room].members.delete(token);
         registry.leaveRoom(token);
         this._getCallback(room, 'leave', token, registry);
 
-        if (this.rooms[room].size === 0) {
+        if (this.rooms[room].members.size === 0) {
             // disband room
             this._getCallback(room, 'disband', null, registry);
             var code = this.rooms[room].code;
@@ -261,14 +258,10 @@ let Rooms = function (defaultCallbacks) {
         }
     }
 
-    this.send = (id, event, data, callback) => {
-
-    }
-
     this.getRoom = (room) => {
 
         if (!this.rooms.hasOwnProperty(room)) {
-            console.log("WARNING: in getRoom, User had room that was not in room list.");
+            console.warn("WARNING: in getRoom, User had room that was not in room list.");
             return null;
         }
 
