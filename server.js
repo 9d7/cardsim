@@ -18,7 +18,8 @@ var rooms = new Rooms(new Waiting.rooms());
 rooms.registerRoomType('secret', {
     max_players: 10,
     min_players: 5,
-    name: 'Secret Hitler'
+    name: 'Secret Hitler',
+    callbacks: {secret: {}}
 })
 
 var registry = new Registry(
@@ -29,7 +30,8 @@ var registry = new Registry(
     10 * 1000,
     {
         default: new Callbacks(rooms),
-        waiting: new Waiting.registry(rooms)
+        waiting: new Waiting.registry(rooms),
+        secret: {reconnect: (token,data,registry)=>{registry.send(token, 'ensure_location', '/secret/', ()=>{})}}
     }
 );
 

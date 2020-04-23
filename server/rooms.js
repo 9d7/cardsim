@@ -269,6 +269,17 @@ let Rooms = function (defaultCallbacks) {
     }
 
 
+    this.ready = (room, registry) => {
+
+        let roomObj = this.getRoom(room);
+        if (roomObj === null) {
+            console.warn("WARNING: tried to ready non-existent room");
+        }
+
+        roomObj.members.forEach(x => registry.setCallbacks(x, roomObj.game));
+        this.rooms[room].inGame = true;
+
+    }
 }
 
 fs.readFile('./resources/words.txt', (err, data) => {
