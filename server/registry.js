@@ -436,13 +436,14 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, cal
 
     this.getToken = (token, key) => {
         if (!this.tokenToSession.hasOwnProperty(token)) {
-            console.warn("INTERNAL WARNING: Attempted to set data of non-existent token.");
+            console.warn("INTERNAL WARNING: Attempted to get data of non-existent token.");
             return null;
         }
 
         if (!this.tokenData.hasOwnProperty(token)) {
             return null;
         }
+
         return this.tokenData[token][key];
     }
 };

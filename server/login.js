@@ -1,4 +1,5 @@
 var schema = require('duck-type').create();
+var srs = require('secure-random-string');
 
 let LoginCallbacks = function (rooms) {
 
@@ -130,6 +131,8 @@ let LoginCallbacks = function (rooms) {
     this.connect = (token, data, registry) => {
         registry.send(token, 'ensure_location', '/', () => {
         });
+        registry.setToken(token, 'public', srs({alphanumeric: true}));
+
     };
 
     this.reconnect = (token, data, registry) => {

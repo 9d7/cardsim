@@ -2,6 +2,24 @@ var schema = require('duck-type').create()
 
 let registryCallbacks = function (rooms) {
 
+    let _getUsers = (room, rooms, registry) => {
+        let members = rooms.getMembers(room);
+        if (room === null) {
+            console.warn("WARNING: _getUsers called on invalid room");
+
+        }
+
+
+        return Array.from(members).map(
+            (memberToken) => {
+                return {
+                    username: registry.getToken(memberToken, 'name'),
+                    public: registry.getToken(memberToken, 'public')
+                };
+            }
+        );
+    }
+
     this.connect = (token, data, registry) => {
         console.warn("WARNING: User connected into non-default callbacks");
     }
@@ -37,7 +55,7 @@ let registryCallbacks = function (rooms) {
             name: game.name,
             max_players: game.max_players,
             min_players: game.min_players,
-            members: rooms.getUsernames(registry, roomID)
+            members: _getUsers(roomID, rooms, registry)
         }
 
         return returnPacket;
@@ -49,14 +67,69 @@ let registryCallbacks = function (rooms) {
         return 1;
     }
 
+    this.ready = (token, data, registry) => {
+
+        try {
+            schema.assert(data).is({isReady: Boolean});
+        } catch (e) {
+            console.warn("WARNING: Invalid packet type sent on ready");
+        }
+
+        let roomID = registry.getRoom(token);
+        if (roomID === null) {
+            console.warn("WARNING: User has waiting callbacks while outside of room");
+            return;
+        }
+
+
+        registry.sendRoom(roomID, 'ready', {
+            member: registry.getToken(token, 'public'),
+            isReady: data.isReady
+        });
+        registry.setToken(token, 'isReady', data.isReady);
+
+        if (data.isReady) {
+            let allReady = true;
+            for (const member of rooms.getMembers(roomID)) {
+                let token = registry.getToken(member, 'isReady');
+                if (token === null || token === undefined || token === false) {
+                    allReady = false;
+                    break;
+                }
+            }
+
+            if (allReady) {
+                rooms.ready(roomID, registry);
+            }
+        }
+
+        return 1;
+
+    }
+
 }
 
 let roomCallbacks = function () {
 
+    let _getUsers = (room, rooms, registry) => {
+        let members = rooms.getMembers(room);
+        if (room === null) {
+            console.warn("WARNING: _getUsers called on invalid room");
+
+        }
+        return Array.from(members).map(
+            (memberToken) => {
+                return {
+                    username: registry.getToken(memberToken, 'name'),
+                    public: registry.getToken(memberToken, 'public')
+                };
+            }
+        );
+    }
+
     this.join = (room, token, registry, rooms) => {
-        console.log("received");
         registry.sendRoom(room, 'userUpdate', {
-            members: rooms.getUsernames(registry, room)
+            members: _getUsers(room, rooms, registry)
         });
 
     }
@@ -64,8 +137,23 @@ let roomCallbacks = function () {
     this.leave = (room, token, registry, rooms) => {
         console.log("received");
         registry.sendRoom(room, 'userUpdate', {
-            members: rooms.getUsernames(registry, room)
+            members: _getUsers(room, rooms, registry)
         });
+
+        let roomObj = rooms.getRoom(room);
+        if (roomObj === null) {
+            console.warn("WARNING: User reconnected in waiting phase without room");
+            return;
+        }
+
+        if (!rooms.roomTypes.hasOwnProperty(roomObj.game)) {
+            console.warn("WARNING: Room does not know about game " + roomObj.game);
+            return;
+        }
+
+        if (roomObj.members.size < rooms.roomTypes[roomObj.game].min_players) {
+            roomObj.members.forEach(x => registry.setToken(x, 'isReady', false));
+        }
 
     }
 

@@ -1,6 +1,16 @@
 $(document).ready(function () {
 
-    $('[data-toggle="tooltip"]').tooltip();
+    $('[data-toggle="tooltip"]').tooltip({
+        delay: {show: 500, hide: 300},
+        template: '<div class="tooltip" role="tooltip">' +
+            '<div class="arrow"></div>' +
+            '<div class="tooltip-inner py-2 px-3"></div></div>',
+        trigger: 'hover',
+        placement: 'top',
+        title: function () {
+            return $(this).data('tooltip-title');
+        }
+    });
 
     function getStatus(members, minPlayers) {
         let numLeft = minPlayers - members;
@@ -19,7 +29,8 @@ $(document).ready(function () {
             output.push(
                 '<div class="row my-3">' +
                 players.slice(i, i + 3).map((data) => {
-                    return '<div class="col"><h3 class="text-white player">' + data + '</h3></div>';
+                    return '<div class="col"><h3 class="text-white player" data-public="' +
+                        data.public + '">' + data.username + '</h3></div>';
                 }).join("") +
                 '</div>'
             );
@@ -33,7 +44,12 @@ $(document).ready(function () {
         $('#status').text(getStatus(members.length, min_players));
         $('#player-list').html(generatePlayerList(members));
         if (members.length >= min_players) {
-            $('#ready-button').collapse('show');
+            // fix ready button
+            let ready_button = $('#ready-button');
+            ready_button.removeClass('btn-secondary').addClass('btn-primary');
+            $(this).tooltip('hide').data('tooltip-title', 'Ready Up');
+            ready_button.collapse('show');
+
         } else {
             $('#ready-button').collapse('hide');
         }
@@ -64,6 +80,21 @@ $(document).ready(function () {
 
     socket.on('userUpdate', (data) => {
         update(data.members);
+    });
+
+    $('#ready-button').on('click', function () {
+        $(this).blur();
+        if ($(this).hasClass('btn-primary')) {
+            $(this).removeClass('btn-primary').addClass('btn-secondary');
+            safe_emit(socket, 'ready', {isReady: true}, () => {
+            });
+            $(this).tooltip('hide').data('tooltip-title', 'Undo Ready Up');
+        } else {
+            $(this).removeClass('btn-secondary').addClass('btn-primary');
+            safe_emit(socket, 'ready', {isReady: false}, () => {
+            })
+            $(this).tooltip('hide').data('tooltip-title', 'Ready Up');
+        }
     });
 
 
