@@ -2,6 +2,15 @@ var schema = require('duck-type').create()
 
 let registryCallbacks = function (rooms) {
 
+    let _setReady = (token, isReady, room, registry) => {
+
+        registry.sendRoom(room, 'ready', {
+            member: registry.getToken(token, 'public'),
+            isReady: isReady
+        });
+        registry.setToken(token, 'isReady', isReady);
+    }
+
     let _getUsers = (room, rooms, registry) => {
         let members = rooms.getMembers(room);
         if (room === null) {
@@ -14,7 +23,8 @@ let registryCallbacks = function (rooms) {
             (memberToken) => {
                 return {
                     username: registry.getToken(memberToken, 'name'),
-                    public: registry.getToken(memberToken, 'public')
+                    public: registry.getToken(memberToken, 'public'),
+                    ready: registry.getToken(memberToken, 'isReady')
                 };
             }
         );
@@ -32,6 +42,7 @@ let registryCallbacks = function (rooms) {
     this.reconnect = (token, data, registry) => {
         registry.send(token, 'ensure_location', '/waiting/', () => {
         });
+        _setReady(token, false, registry.getRoom(token), registry);
     }
 
     this.getData = (token, data, registry) => {
@@ -50,15 +61,13 @@ let registryCallbacks = function (rooms) {
 
         let game = rooms.roomTypes[room.game];
 
-        let returnPacket = {
+        return {
             code: room.code,
             name: game.name,
             max_players: game.max_players,
             min_players: game.min_players,
             members: _getUsers(roomID, rooms, registry)
-        }
-
-        return returnPacket;
+        };
 
     }
 
@@ -82,11 +91,7 @@ let registryCallbacks = function (rooms) {
         }
 
 
-        registry.sendRoom(roomID, 'ready', {
-            member: registry.getToken(token, 'public'),
-            isReady: data.isReady
-        });
-        registry.setToken(token, 'isReady', data.isReady);
+        _setReady(token, data.isReady, roomID, registry);
 
         if (data.isReady) {
             let allReady = true;
@@ -121,7 +126,8 @@ let roomCallbacks = function () {
             (memberToken) => {
                 return {
                     username: registry.getToken(memberToken, 'name'),
-                    public: registry.getToken(memberToken, 'public')
+                    public: registry.getToken(memberToken, 'public'),
+                    ready: registry.getToken(memberToken, 'isReady')
                 };
             }
         );

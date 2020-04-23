@@ -29,7 +29,8 @@ $(document).ready(function () {
             output.push(
                 '<div class="row my-3">' +
                 players.slice(i, i + 3).map((data) => {
-                    return '<div class="col"><h3 class="text-white player" data-public="' +
+                    return '<div class="col"><h3 class="text-white player ' +
+                        (data.ready ? 'text-white-50' : '') + '" data-public="' +
                         data.public + '">' + data.username + '</h3></div>';
                 }).join("") +
                 '</div>'
@@ -96,6 +97,18 @@ $(document).ready(function () {
             $(this).tooltip('hide').data('tooltip-title', 'Ready Up');
         }
     });
+
+    socket.on('ready', (data) => {
+
+        let target = $('.player[data-public="' + data.member + '"]');
+
+        if (data.isReady) {
+            target.addClass("text-white-50");
+        } else {
+            target.removeClass("text-white-50");
+        }
+
+    })
 
 
 });
