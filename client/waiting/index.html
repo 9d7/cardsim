@@ -16,19 +16,32 @@
 <body class="d-flex flex-column">
 <div id="page-content">
 
-    <div class="alert alert-danger collapse" id='disconnectAlert' role="alert">
-        You are currently disconnected from the server. Attempting to reconnect...
+    <div class="alert alert-danger text-center collapse" id="commonAlert">
+        I'm a big ol' alert :)
     </div>
+    <div class="container px-5 mt-5 justify-content-center">
 
-    <div class="container mt-5 justify-content-center">
-        <div class="jumbotron p-3 shadow-lg border">
-            <h1 class="display-4 text-center" id="status">Loading...</h1>
-            <div class="container text-center justify-content-center collapse show">
-                <p class="m-0">Room Code:</p>
-                <h2><code class="text-primary" id="roomCode">big ben</code></h2>
-                <hr class="mt-2 mb-3"/>
-                <div class="container center-text  mt-2">
-                    <h4>Game: <span id="gameName">...</span></h4>
+        <div class="jumbotron p-0 shadow-lg border" style="position: relative;">
+            <button id="back-button" class="shadow-lg btn btn-dark m-0 p-2">
+                <svg class="bi bi-arrow-left-short text-white" width="3em" height="3em" viewBox="0 0 16 16"
+                     fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd"
+                          d="M7.854 4.646a.5.5 0 010 .708L5.207 8l2.647 2.646a.5.5 0 01-.708.708l-3-3a.5.5 0 010-.708l3-3a.5.5 0 01.708 0z"
+                          clip-rule="evenodd"/>
+                    <path fill-rule="evenodd" d="M4.5 8a.5.5 0 01.5-.5h6.5a.5.5 0 010 1H5a.5.5 0 01-.5-.5z"
+                          clip-rule="evenodd"/>
+                </svg>
+            </button>
+
+            <div class="m-3">
+                <h1 class="display-4 text-center" id="status">Loading...</h1>
+                <div class="container text-center justify-content-center collapse show">
+                    <p class="m-0">Room Code:</p>
+                    <h2><code class="text-primary" id="roomCode">big ben</code></h2>
+                    <hr class="mt-2 mb-3"/>
+                    <div class="container center-text  mt-2">
+                        <h4>Game: <span id="gameName">...</span></h4>
+                    </div>
                 </div>
             </div>
         </div>

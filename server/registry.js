@@ -83,8 +83,6 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
             this.ipBuckets[ip]++;
         }
 
-        console.log(this.ipBuckets[ip]);
-
         let retval = (this.ipBuckets[ip] <= this.maxFill);
         if (!retval && (this.ipBuckets[ip] <= this.maxFill + 1)) {
             socket.emit('throttled');
@@ -166,7 +164,6 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
             return;
         }
         let token = this.sessionToToken[socket.id];
-
         this.killTimers[token] = setTimeout(() => {
             this._getCallback(token, 'disconnect', null);
             delete this.tokenToSession[token];
@@ -331,18 +328,18 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
 
     this.setCallbacks = (token, callbacks) => {
 
-        let session = self._getSession(token);
+        let session = this._getSession(token);
         if (session === null) return;
 
 
-        if (!self.io.sockets.connected.hasOwnProperty(session)) {
+        if (!this.io.sockets.connected.hasOwnProperty(session)) {
             // user temporarily disconnected
             // this is fine, callbacks are updated in registry for when they return,
             this.tokenCallbacks[token] = callbacks;
             return;
         }
 
-        let socket = self.io.sockets.connected[session];
+        let socket = this.io.sockets.connected[session];
 
         this._getCallbacksFromToken(token).map(
             x => socket.removeAllListeners(x)
@@ -354,6 +351,9 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
     };
 
     this.send = (token, event, data, callback) => {
+
+        let session = this._getSession(token);
+        if (!session) return false;
 
         if (!this.io.sockets.connected.hasOwnProperty(session)) {
             // user temporarily disconnected
@@ -407,7 +407,7 @@ let Registry = function (io, leakRate, maxFill, ipClearRate, disconnectTime, def
     this.getRoom = (token) => {
 
         let session = this._getSession(token);
-        if (!session) return false;
+        if (!session) return null;
 
         if (this.tokenRooms.hasOwnProperty(token)) {
             return this.tokenRooms[token];

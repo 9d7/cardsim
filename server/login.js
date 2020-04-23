@@ -1,6 +1,6 @@
 var schema = require('duck-type').create();
 
-let LoginCallbacks = function (rooms) {
+let LoginCallbacks = function (rooms, waitingCallbacks) {
 
     let checkUsername = (username) => {
         // check username validity
@@ -74,7 +74,11 @@ let LoginCallbacks = function (rooms) {
         }
 
 
-        return rooms.joinRoom(token, roomCode, username, registry);
+        let retval = rooms.joinRoom(token, roomCode, username, registry);
+        if (retval.accepted) {
+            registry.setCallbacks(token, waitingCallbacks);
+        }
+        return retval;
 
     }
 
@@ -110,14 +114,28 @@ let LoginCallbacks = function (rooms) {
             };
         }
 
-        return rooms.createRoom(token, data.game, username, registry);
+
+        let retval = rooms.createRoom(token, data.game, username, registry);
+        if (retval.accepted) {
+            registry.setCallbacks(token, waitingCallbacks);
+        }
+        return retval;
 
     };
 
     this.disconnect = (token, data, registry) => {
         rooms.onDisconnect(token, registry);
-    }
+    };
 
+    this.connect = (token, data, registry) => {
+        registry.send(token, 'ensure_location', '/', () => {
+        });
+    };
+
+    this.reconnect = (token, data, registry) => {
+        registry.send(token, 'ensure_location', '/', () => {
+        });
+    };
 
 }
 module.exports = LoginCallbacks;

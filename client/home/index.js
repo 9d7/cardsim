@@ -100,12 +100,12 @@ $(document).ready(function () {
 
             if (data.response.username !== undefined) {
                 $('#usernameFeedback').text(responses[data.response.username]);
-                username.removeClass('is-valid').addClass('is-invalid');
+                $('#username').removeClass('is-valid').addClass('is-invalid');
             }
 
             if (data.response.roomCode !== undefined) {
                 $('#roomCodeFeedback').text(responses[data.response.roomCode]);
-                roomCode.removeClass('is-valid').addClass('is-invalid');
+                $('#roomCode').removeClass('is-valid').addClass('is-invalid');
             }
 
             if (data.response.modal !== undefined) {
@@ -128,7 +128,7 @@ $(document).ready(function () {
         let userVal = username.val();
 
         let usernameOK = checkUsername(username);
-        let roomCodeOK = checkRoomCode(roomname);
+        let roomCodeOK = checkRoomCode(roomCode);
 
         if (usernameOK && roomCodeOK) {
 
