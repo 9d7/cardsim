@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "dependencies": {
     "duck-type": "0.0.17",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "secure-random-string": "^1.1.3",
     "serve-static": "^1.14.1"
   },
